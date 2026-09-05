@@ -108,6 +108,8 @@ export const api = {
   get: (path) => send('GET', path),
   post: (path, body) => send('POST', path, body),
   patch: (path, body) => send('PATCH', path, body),
-  del: (path) => send('DELETE', path),
+  // DELETE carries a body here so a device can name the subscription it is
+  // removing; the endpoint URL is the only identifier the browser has.
+  del: (path, body) => send('DELETE', path, body),
   refresh,
 };

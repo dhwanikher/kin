@@ -65,6 +65,34 @@ Also here, and all of it load-bearing rather than decorative:
 - Full keyboard operation, a skip link to the dose list, visible focus rings,
   and `prefers-reduced-motion` respected.
 
+## Reminders
+
+A dose going overdue is the one thing that has to reach somebody who is not
+looking at the app. Kin sends a web push notification when a dose is more than
+half an hour late.
+
+The rules are deliberately strict, because notifications are the feature people
+switch off:
+
+- **Only when genuinely late.** Past the due time by the grace period, not at it.
+- **Once per dose, ever.** A `remindedAt` field is claimed with the same
+  conditional update the resolve endpoint uses, so two overlapping sweeps cannot
+  both send. A duplicate notification about medication is exactly the kind of
+  thing that prompts somebody to give a second tablet.
+- **Only to people who can act.** Admins and caregivers. A viewer cannot record
+  a dose, so waking them achieves nothing.
+- **Never to a dose already dealt with**, even if it was resolved in the moment
+  between the query and the send.
+
+The sweep is a `setInterval` in the API process. That is honest for a
+single-instance deployment and has nothing to forget to deploy; it is also the
+first thing that would have to move to a dedicated worker to run more than one
+instance, since every instance would otherwise sweep. The atomic claim makes
+that safe but wasteful.
+
+Push is optional. Without VAPID keys the app works completely and simply never
+notifies — a missing key is a disabled feature, not a boot failure.
+
 ## Timezones, properly
 
 A medication says "08:00". That is a wall clock instruction, and a wall clock is
@@ -84,7 +112,7 @@ Needs Node 20+ and a local MongoDB.
 npm install
 npm run mongo:start          # or point MONGO_URI at your own
 npm run dev                  # API on :4000, app on :5173
-npm test                     # 33 tests
+npm test                     # 41 tests
 ```
 
 `.env.example` lists the configuration; defaults work for local development, and
@@ -124,9 +152,11 @@ exists, which leaks the existence of other families' data to anyone guessing ids
 
 Real ones, in rough order of how much they would matter to someone using it:
 
-- **No notifications.** A dose going overdue changes the screen but does not
-  reach anybody's pocket. For the actual problem this is the biggest gap; it
-  needs web push and a scheduler.
+- **Push delivery is verified server-side, not end to end.** The reminder rules
+  have tests, including a negative control, and the VAPID pipeline is wired and
+  running. What has not been exercised in a browser is the permission grant and
+  an actual notification arriving on a device, because that needs a human to
+  click Allow. Treat it as working-but-unproven until you have seen one land.
 - **No invitation emails.** You can only add someone who has already signed up.
 - **No offline support.** A phone with no signal cannot record a dose, which in
   a hospital corridor is exactly when you would want to.

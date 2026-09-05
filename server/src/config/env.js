@@ -25,6 +25,18 @@ export const config = {
 
   accessTtl: '15m',
   refreshTtl: '30d',
+
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+    privateKey: process.env.VAPID_PRIVATE_KEY ?? '',
+    subject: process.env.VAPID_SUBJECT ?? 'mailto:kin@example.com',
+  },
+  // How often the overdue sweep runs. Short in development so the behaviour is
+  // observable; a minute is plenty in production, since the grace period is
+  // measured in tens of minutes.
+  reminderSweepSeconds: Number(process.env.REMINDER_SWEEP_SECONDS ?? 60),
+  // How late a dose has to be before anyone is disturbed about it.
+  reminderGraceMinutes: Number(process.env.REMINDER_GRACE_MINUTES ?? 30),
 };
 
 export const isProduction = config.env === 'production';

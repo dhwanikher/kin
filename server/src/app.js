@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import circleRoutes from './routes/circles.js';
 import medicationRoutes from './routes/medications.js';
 import occurrenceRoutes from './routes/occurrences.js';
+import pushRoutes from './routes/push.js';
 
 /**
  * Builds the app without binding a port, so tests can drive it in-process.
@@ -25,6 +26,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/push', pushRoutes);
   app.use('/api/circles', circleRoutes);
   app.use('/api/circles/:circleId/medications', medicationRoutes);
   app.use('/api/circles/:circleId/occurrences', occurrenceRoutes);

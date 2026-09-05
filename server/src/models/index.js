@@ -139,6 +139,11 @@ const occurrenceSchema = new Schema(
     resolvedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     resolvedAt: { type: Date, default: null },
     note: { type: String, trim: true, default: '' },
+
+    // When an overdue reminder was sent for this dose. Null means none yet.
+    // Claiming this field is what makes a reminder exactly-once even if two
+    // sweeps overlap; see services/reminders.js.
+    remindedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -155,9 +160,35 @@ occurrenceSchema.index({ medication: 1, dueAt: 1 }, { unique: true });
 // The query the main screen makes, every time it loads.
 occurrenceSchema.index({ circle: 1, localDate: 1, dueAt: 1 });
 
+// The query the reminder sweep makes, every minute: unresolved doses that are
+// past due and have not been reminded about.
+occurrenceSchema.index({ status: 1, remindedAt: 1, dueAt: 1 });
+
+/* -------------------------------------------------------------------------- */
+
+const pushSubscriptionSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // The push service URL the browser gave us. Unique because re-subscribing
+    // on the same browser returns the same endpoint, and storing it twice would
+    // send every notification twice to one device.
+    endpoint: { type: String, required: true, unique: true },
+    keys: {
+      p256dh: { type: String, required: true },
+      auth: { type: String, required: true },
+    },
+    // Set aside for diagnostics when a subscription starts failing.
+    userAgent: { type: String, default: '' },
+  },
+  { timestamps: true }
+);
+
+pushSubscriptionSchema.index({ user: 1 });
+
 /* -------------------------------------------------------------------------- */
 
 export const User = model('User', userSchema);
+export const PushSubscription = model('PushSubscription', pushSubscriptionSchema);
 export const Circle = model('Circle', circleSchema);
 export const Membership = model('Membership', membershipSchema);
 export const Medication = model('Medication', medicationSchema);
